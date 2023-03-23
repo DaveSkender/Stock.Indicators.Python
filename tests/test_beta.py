@@ -1,5 +1,6 @@
 import pytest
 from stock_indicators import indicators
+from stock_indicators.indicators.common.chain import IndicatorChain
 from stock_indicators.indicators.common.enums import BetaType
 
 class TestBeta:
@@ -67,6 +68,24 @@ class TestBeta:
 
         r = results[501]
         assert 1.5908 == round(float(r.beta_down), 4)
+
+    def test_chainor(self, quotes, other_quotes):
+        results = IndicatorChain.use_quotes(other_quotes)\
+            .add(indicators.get_beta, quotes, 20)\
+            .add(indicators.get_sma, 10)\
+            .calc()
+                
+        assert 502 == len(results)
+        assert 473 == len(list(filter(lambda x: x.sma is not None, results)))
+    
+    def test_chainee(self, quotes, other_quotes):
+        results = IndicatorChain.use_quotes(quotes)\
+            .add(indicators.get_sma, 2)\
+            .add(indicators.get_beta, indicators.get_sma(other_quotes, 2), 20)\
+            .calc()
+
+        assert 502 == len(results)
+        assert 481 == len(list(filter(lambda x: x.beta is not None, results)))
 
     def test_bad_data(self, bad_quotes):
         r = indicators.get_beta(bad_quotes, bad_quotes, 15, BetaType.STANDARD)
